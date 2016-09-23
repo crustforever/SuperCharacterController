@@ -2,7 +2,7 @@
 using System.Collections;
 
 [RequireComponent(typeof(CustomController))]
-[RequireComponent(typeof(PlayerInputController))]
+[RequireComponent(typeof(CrustCharacterInput))]
 public class MoodiePlayerMachine : SuperStateMachine 
 {
 
@@ -24,13 +24,13 @@ public class MoodiePlayerMachine : SuperStateMachine
     // current direction our character's art is facing
     public Vector3 lookDirection { get; private set; }
 
-    private PlayerInputController input;
+    private CrustCharacterInput input;
 
 	void Start () 
     {
         // Put any code here you want to run ONCE, when the object is initialized
 
-        input = gameObject.GetComponent<PlayerInputController>();
+        input = gameObject.GetComponent<CrustCharacterInput>();
 
         // Grab the controller object from our object
         controller = gameObject.GetComponent<CustomController>();

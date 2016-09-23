@@ -8,7 +8,7 @@ public class PlayerCamera : MonoBehaviour {
 
     public GameObject PlayerTarget;    
 
-    private PlayerInputController input;
+    private CrustCharacterInput input;
     private Transform target;
     private PlayerMachine machine;
     private float yRotation;
@@ -17,7 +17,7 @@ public class PlayerCamera : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        input = PlayerTarget.GetComponent<PlayerInputController>();
+        input = PlayerTarget.GetComponent<CrustCharacterInput>();
         machine = PlayerTarget.GetComponent<PlayerMachine>();
         controller = PlayerTarget.GetComponent<SuperCharacterController>();
         target = PlayerTarget.transform;

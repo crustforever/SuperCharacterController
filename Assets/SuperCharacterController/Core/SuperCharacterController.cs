@@ -344,8 +344,8 @@ public class SuperCharacterController : MonoBehaviour
                 Vector3 position = SpherePosition(sphere);
                 Vector3 contactPoint = SuperCollider.ClosestPointOnSurface(col, position, radius);
 
-                if (contactPoint != Vector3.zero)
-                {
+//                if (contactPoint != Vector3.zero)
+//                {
                     if (debugPushbackMesssages)
                         DebugDraw.DrawMarker(contactPoint, 2.0f, Color.cyan, 0.0f, false);
 
@@ -411,7 +411,7 @@ public class SuperCharacterController : MonoBehaviour
 
                         collisionData.Add(collision);
                     }
-                }
+//                }
             }
         }
 

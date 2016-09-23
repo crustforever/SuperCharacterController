@@ -8,7 +8,7 @@ public class MoodiePlayerCamera : MonoBehaviour {
 
     public GameObject PlayerTarget;
 
-    private PlayerInputController input;
+    private CrustCharacterInput input;
     private Transform target;
     private MoodiePlayerMachine machine;
     private float yRotation;
@@ -18,7 +18,7 @@ public class MoodiePlayerCamera : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        input = PlayerTarget.GetComponent<PlayerInputController>();
+        input = PlayerTarget.GetComponent<CrustCharacterInput>();
         machine = PlayerTarget.GetComponent<MoodiePlayerMachine>();
         controller = PlayerTarget.GetComponent<CustomController>();
         target = PlayerTarget.transform;
