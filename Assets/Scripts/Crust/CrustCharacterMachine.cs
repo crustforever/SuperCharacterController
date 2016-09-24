@@ -161,84 +161,67 @@ namespace AssemblyCSharp
 
 			if (_input.Current.MovementVector != Vector2.zero)
 			{
-				Vector3 localMovementDirection = LocalMovementDirection();
+				//get the direction the character wants to move
+				Vector3 movementDirection = LocalMovementDirection();
 
-				_velocity = Vector3.MoveTowards(_velocity, localMovementDirection * WalkSpeed, WalkAcceleration * _controller.deltaTime);
+				//apply an acceleration in that direction
+				_velocity = Vector3.MoveTowards(_velocity, movementDirection * WalkSpeed, WalkAcceleration * _controller.deltaTime);
 
-				//turn the character's forward vector towards our movement vector (which is a topdown 2D vector -- X and Z)
-				//Vector3 movementVector3 = new Vector3(this._input.Current.MovementVector.x, 0.0f, this._input.Current.MovementVector.y);
-//				Debug.DrawRay(this.transform.position, movementVector3, Color.green, 20);
-//
-//				//calculate the angle between the movement (joystick) and the current facing (transform.forward)
-				//float angleDelta = Vector3.Angle(this.transform.forward, localMovementDirection);
-//
-//				//find the current position of the full 180 degree turn that we're on
-//				float t = (180.0f - angleDelta) / 180.0f;
-//
-//				//step it
-//				float step = this._controller.deltaTime / this.TurnSeconds;
-//				float stepped = Mathf.Min(t + step, 1.0f);
-//
-//				//applying an ease to it will map the stepped value from the linear 0-1 to the eased 0-1 depending on the easing function
-//				float eased = Easing.Quartic.easeOut(stepped);
-//
-//				Vector3 origin = Quaternion.AngleAxis(180.0f, Vector3.up) * movementVector3;
-//				Debug.DrawRay(this.transform.position, origin, Color.red, 20);
-//
-//				Vector3 forward = Quaternion.AngleAxis(eased * 180.0f, Vector3.up) * origin;
-//				Debug.DrawRay(this.transform.position, forward, Color.cyan, 20);
-//
-//				this.transform.rotation = Quaternion.LookRotation(forward);
+				//apply a tween to rotate the character towards the movement vector
+				//first find the angular difference between the current facing's angle and the movement direction's angle
+				//remember that these angles are calculated using only the X and Z (2D vectors from the topdown perspective)
+				float moveAngle = Mathf.Atan2(movementDirection.z, movementDirection.x);
+				float facingAngle = Mathf.Atan2(this.transform.forward.z, this.transform.forward.x);
+				float angleDifference = moveAngle - facingAngle;
 
-				//float t = (180.0f - angleDelta) / 180.0f;
-				//float stepped = Mathf.Min(t + this._controller.deltaTime / this.TurnSeconds, 1.0f);
+				//this angle difference is essentially a measurement of how far away from the desired movement vector we are
+				//the angle difference therefore should always be between -180 and 180 degrees (or -PI and PI)
 
-				//float linearStep = this._controller.deltaTime / this.TurnSeconds;
-				//float linearStepDelta = t + linearStep - t;
+				//if the magnitude of the angle difference is greater than 180, set it to it's smaller complimentary angle
+				if (angleDifference > Mathf.PI)
+					angleDifference = angleDifference - Mathf.PI * 2.0f;
 
-				//HOW TO MAP A LINEAR STEP TO AN EASED STEP BASED ON THE CURRENT ANGLE BETWEEN THE CURRENT FACING AND THE TARGET FACING?
-				float angleDifference = Mathf.Atan2(localMovementDirection.z, localMovementDirection.x) - Mathf.Atan2(this.transform.forward.z, this.transform.forward.x);
+				if (angleDifference < -Mathf.PI)
+					angleDifference = Mathf.PI * 2.0f + angleDifference;
 
-				//map the angle difference to a value from 0 - 1 that indicates its position in the linear path from 180 degrees to 0 degrees
-				float parameterizedAngleDifference = 1.0f - Mathf.Abs(angleDifference) / Mathf.PI;
+				//now that we have an angle from -180 to 180, we map it to a value from (0-1) so that we can use a tween operation on it
+				//for tweening purposes we only care about this mapped number insofar as it gives us a measurement of our current vector facing in a full turn (180 degrees arc)
+				//therefore we can ignore the sign of the angle (keeping track of it for later tells us the direction of our spin)
+				bool clockwise = angleDifference < 0;
+				float mappedAngleDifference = 1.0f - Mathf.Abs(angleDifference) / Mathf.PI;
 
-				//using our easing function, find the eased t value that corresponds to this linear position
+				//our tween function is quadratic "ease out"
 				//x = -1 * ((t - 1)^4 - 1)
-				//t = (1 - x)^(1 / 4) + 1
-				//float t = (angleDifference > 0) ? Mathf.Pow(1.0f - parameterizedAngleDifference, 1.0f / 4.0f) + 1 : -1 * Mathf.Pow(1.0f - parameterizedAngleDifference, 1.0f / 4.0f) + 1;
-				float t = -1.0f * Mathf.Pow(1.0f - parameterizedAngleDifference, 1.0f / 4.0f) + 1.0f;
 
-				//step t
+				//if we were turning the character linearly, our t value (the time parameter) would be exactly equal to our mapped angle difference
+				//but because we are not turning the character at a constant rate, we need to find the value of t which lines up with our current angle facing
+				//we do this by solving for t in the tween equation
+				//t = (1 - x)^(1 / 4) + 1
+				float t = -1.0f * Mathf.Pow(1.0f - mappedAngleDifference, 1.0f / 4.0f) + 1.0f;
+
+				//now that we have our position in the eased tween that corresponds to our current angle, we can step that t value linearly (w/ our turn time parameter)
 				float timeStep = this._controller.deltaTime / this.TurnSeconds;
 				float stepped = Mathf.Min(t + timeStep, 1.0f);
+
+				//popping that stepped value into the original tween function gives us our new stepped angle difference
 				float eased = Easing.Quartic.easeOut(stepped);
 
-				//convert back to an angle
-				float steppedAngleDifference = eased * Mathf.PI;
-				float steppedAngleDifferenceDeg = steppedAngleDifference * Mathf.Rad2Deg;
+				//but it is still parameterized from 0-1, so we convert it to degrees
+				float steppedAngleDifference = eased * 180.0f;
 
-				//clockwise / counterclockwise
-				if (angleDifference > 0)
-					steppedAngleDifferenceDeg *= -1.0f;
+				//then we multiply by -1 if necessary to apply the proper spin direction
+				if (!clockwise)
+					steppedAngleDifference *= -1.0f;
 
-				//find the new facing by rotating the back facing movement vector by the proper number of degrees
-				Vector3 steppedFacing = Quaternion.AngleAxis(steppedAngleDifferenceDeg, Vector3.up) * new Vector3(-localMovementDirection.x, 0.0f, -localMovementDirection.z);
+				//finally we use a quaternion to rotate our back facing vector around the Y axis by the new stepped angle location which gives us a new facing vector which has
+				//been stepped through the tween function
+				//NOTE: it is important to realize that the vector that we're actually rotating to get the result is the vector opposite from the movement vector
+				//we rotate that one because our tween function goes from 0-1 and the opposite vector (180 degrees away) is the reference point for the beginning of the tween (0) and
+				//the movement vector itself is the reference point for the end of the tween (1)
+				Vector3 steppedFacing = Quaternion.AngleAxis(steppedAngleDifference, Vector3.up) * new Vector3(-movementDirection.x, 0.0f, -movementDirection.z);
+
+				//set rotation on the transform by converting to a quaternion 
 				this.transform.rotation = Quaternion.LookRotation(steppedFacing);
-
-				//Vector3 rotated = Vector3.RotateTowards(this.transform.forward, localMovementDirection, this._controller.deltaTime / this.TurnSeconds * Mathf.PI, 0.0f);
-
-				//Vector3 steppedFacing = Quaternion.AngleAxis(180.0f * this._controller.deltaTime / this.TurnSeconds, Vector3.up) * this.transform.forward;
-				//this.transform.rotation = Quaternion.LookRotation(rotated);
-
-				//Vector3 steppedVector = Vector3.RotateTowards(this.transform.forward, movementVector3, easedStepDelta * Mathf.PI, 0.0f);
-
-				//set it
-				//this.transform.rotation = Quaternion.LookRotation(steppedVector);
-
-				//float speed = angleDelta / 180.0f;
-
-				//now i need to convert that parameterized and eased t value back into a speed contribution
-				//this.transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(this.transform.forward, new Vector3(this._input.Current.MovementVector.x, 0.0f, this._input.Current.MovementVector.y), (Mathf.PI + Mathf.PI * speed) * this._controller.deltaTime, 0.0f));
 			}
 			else
 			{
