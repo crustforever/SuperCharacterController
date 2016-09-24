@@ -31,10 +31,12 @@ namespace AssemblyCSharp
 
 			_y_rotation += _input.Current.CameraVector.y;
 
+			/*
 			Vector3 left = Vector3.Cross(_machine.Facing, _controller.up);
 
 			transform.rotation = Quaternion.LookRotation(_machine.Facing, _controller.up);
 			transform.rotation = Quaternion.AngleAxis(_y_rotation, left) * transform.rotation;
+			*/
 
 			transform.position -= transform.forward * Distance;
 			transform.position += _controller.up * Height;
