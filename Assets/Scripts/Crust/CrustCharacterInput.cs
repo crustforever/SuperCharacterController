@@ -10,8 +10,8 @@ namespace AssemblyCSharp
 
 		void Update()
 		{
-			Vector2 leftAxis = new Vector3(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-			Vector2 rightAxis = new Vector2(Input.GetAxisRaw("RightH"), Input.GetAxisRaw("RightV"));
+			Vector2 leftAxis = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+			Vector2 rightAxis = new Vector2(Input.GetAxis("RightH"), Input.GetAxis("RightV"));
 
 			Vector2 cameraVector = new Vector2(rightAxis.x * RightStickMultiplier.x, rightAxis.y * RightStickMultiplier.y);
 			if (Mathf.Approximately(rightAxis.x, 0.0f) && Mathf.Approximately(rightAxis.y, 0.0f))
