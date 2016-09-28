@@ -29,7 +29,7 @@ namespace AssemblyCSharp
 		{
 			transform.position = _target.position;
 
-			_y_rotation += _input.Current.CameraVector.y;
+			//_y_rotation += _input.Current.CameraVector.y;
 
 			/*
 			Vector3 left = Vector3.Cross(_machine.Facing, _controller.up);
@@ -43,4 +43,3 @@ namespace AssemblyCSharp
 		}
 	}
 }
-
