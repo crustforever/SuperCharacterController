@@ -11,7 +11,7 @@ namespace AssemblyCSharp
 		void Update()
 		{
 			Vector2 leftAxis = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-//			Vector2 rightAxis = new Vector2(Input.GetAxis("RightH"), Input.GetAxis("RightV"));
+			Vector2 rightAxis = new Vector2(Input.GetAxis("RightH"), Input.GetAxis("RightV"));
 
 //			Vector2 cameraVector = new Vector2(rightAxis.x * RightStickMultiplier.x, rightAxis.y * RightStickMultiplier.y);
 //			if (Mathf.Approximately(rightAxis.x, 0.0f) && Mathf.Approximately(rightAxis.y, 0.0f))
@@ -25,7 +25,7 @@ namespace AssemblyCSharp
 			Current = new CrustInput()
 			{
 				LeftAxis = leftAxis,
-//				CameraVector = cameraVector,
+				RightAxis = rightAxis,
 				Jump = jumpInput
 			};
 		}
@@ -34,7 +34,7 @@ namespace AssemblyCSharp
 	public struct CrustInput
 	{
 		public Vector2 LeftAxis;
-		//public Vector2 CameraVector;
+		public Vector2 RightAxis;
 		public bool Jump;
 	}
 }

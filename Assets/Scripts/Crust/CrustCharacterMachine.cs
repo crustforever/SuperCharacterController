@@ -46,7 +46,9 @@ namespace AssemblyCSharp
 			// Rotate out facing direction horizontally based on mouse input
 			//_facing = Quaternion.AngleAxis(_input.Current.CameraVector.x, _controller.up) * _facing;
 
-			TopDownDirection(this.MoveDeadZone);
+			//TopDownDirection(this.MoveDeadZone);
+
+			//DebugDraw
 		}
 
 		protected override void LateGlobalSuperUpdate()
