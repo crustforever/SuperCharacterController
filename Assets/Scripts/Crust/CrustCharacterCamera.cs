@@ -8,15 +8,18 @@ namespace AssemblyCSharp
 		public float Distance = 5.0f;
 		public float Height = 2.0f;
 
+		public float MaxRotationSpeed = 180.0f;
+		public float MinRotationSpeed;
+		public float RotationAcceleration;
+
 		public GameObject CharacterTarget;
 
 		private CrustCharacterInput _input;
-		private Transform _target;
 		private CrustCharacterMachine _machine;
+		private SuperCharacterController _controller;
+		private Transform _target;
 
 		private Vector3 _look_direction;
-
-		private SuperCharacterController _controller;
 
 		void Start()
 		{
@@ -25,27 +28,48 @@ namespace AssemblyCSharp
 			_controller = CharacterTarget.GetComponent<SuperCharacterController>();
 			_target = CharacterTarget.transform;
 
-			this._look_direction = this._target.forward;
+			this._look_direction = this.transform.forward;
 		}
 
 		void LateUpdate()
 		{
 			this.transform.position = this._target.position;
 
-			this._look_direction = Quaternion.AngleAxis(this._input.Current.RightAxis.x, this._controller.up) * this._look_direction;
-			transform.rotation = Quaternion.LookRotation(this._look_direction, this._controller.up);
+			//get the camera direction
+			Vector2 cameraDirection = new Vector2(this.transform.forward.x, this.transform.forward.z).normalized;
 
-			//_y_rotation += _input.Current.CameraVector.y;
+			if ((CrustCharacterMachine.States)this._machine.currentState == CrustCharacterMachine.States.WALK)
+			{
+				//get the turn direction (it's already in world space relative to the camera)
+				Vector2 turnDirection = this._machine.LastTurnDirection;
 
-			/*
-			Vector3 left = Vector3.Cross(_machine.Facing, _controller.up);
+				//get the angle difference between them
+				float targetAngle = Mathf.Atan2(turnDirection.y, turnDirection.x);
+				float currentAngle = Mathf.Atan2(cameraDirection.y, cameraDirection.x);
+				float angleDifference = currentAngle - targetAngle;
 
-			transform.rotation = Quaternion.LookRotation(_machine.Facing, _controller.up);
-			transform.rotation = Quaternion.AngleAxis(_y_rotation, left) * transform.rotation;
-			*/
+				//wrap it if necessary (should never happen)
+				if (angleDifference > Mathf.PI)
+					angleDifference = angleDifference - Mathf.PI * 2.0f;
 
-			this.transform.position -= transform.forward * Distance;
-			this.transform.position += _controller.up * Height;
+				if (angleDifference < -Mathf.PI)
+					angleDifference = Mathf.PI * 2.0f + angleDifference;
+
+				//get clockwise or counterclockwise speed
+				float turnRate;
+				if (angleDifference < 0)
+					turnRate = Mathf.Max(angleDifference, -this.MaxRotationSpeed * this._controller.deltaTime);
+				else
+					turnRate = Mathf.Min(angleDifference, this.MaxRotationSpeed * this._controller.deltaTime);
+
+				//rotate the camera direction towards the turn direction
+				this._look_direction = Quaternion.AngleAxis(turnRate, this._controller.up) * this._look_direction;
+				transform.rotation = Quaternion.LookRotation(this._look_direction);
+			}
+
+			//put the camera back (in the direction opposite our camera direction vector) and up behind the character
+			this.transform.position -= new Vector3(cameraDirection.x, 0.0f, cameraDirection.y) * this.Distance;
+			this.transform.position += _controller.up * this.Height;
 		}
 	}
 }

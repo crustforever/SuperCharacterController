@@ -20,22 +20,23 @@ namespace AssemblyCSharp
 		public float Gravity = 25.0f;
 
 		// Add more states by comma separating them
-		enum States { IDLE, WALK, JUMP, FALL }
+		public enum States { IDLE, WALK, JUMP, FALL }
 
 		public Transform CharacterCameraTransform;
 
 		private SuperCharacterController _controller;
 		private CrustCharacterInput _input;
 		private Vector3 _velocity;
-		private Vector2 _last_facing_direction;
+		private Vector2 _last_turn_direction;
+		public Vector2 LastTurnDirection { get { return this._last_turn_direction; }}
 
 		void Start()
 		{
 			this._input = gameObject.GetComponent<CrustCharacterInput>();
 			this._controller = gameObject.GetComponent<SuperCharacterController>();
 
-			//use initial facing as the last facing
-			this._last_facing_direction = new Vector2(this.transform.forward.z, this.transform.forward.x);
+			//use initial facing as the last turn direction
+			this._last_turn_direction = new Vector2(this.transform.forward.z, this.transform.forward.x);
 
 			//set state to idle on start
 			currentState = States.IDLE;
@@ -60,9 +61,9 @@ namespace AssemblyCSharp
 			Vector2 turnDirection = TopDownDirection(this.TurnDeadZone);
 			if (turnDirection != Vector2.zero)
 			{
-				this._last_facing_direction = turnDirection;
+				this._last_turn_direction = turnDirection;
 			}
-			UpdateFacing(this._last_facing_direction);
+			UpdateFacing(this._last_turn_direction);
 		}
 
 		private bool AcquiringGround()
