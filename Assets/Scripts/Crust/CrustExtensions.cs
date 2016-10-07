@@ -10,8 +10,13 @@ namespace AssemblyCSharp
 		/// </summary>
 		public static Vector2 TopDownForward(this Transform t)
 		{
-			float angle = Vector3.Angle(t.up, Vector3.up);
-			Vector3 perp = Vector3.Cross(t.up, Vector3.up);
+			return t.TopDownForward(t.up);
+		}
+
+		public static Vector2 TopDownForward(this Transform t, Vector3 up)
+		{
+			float angle = Vector3.Angle(up, Vector3.up);
+			Vector3 perp = Vector3.Cross(up, Vector3.up);
 			Vector3 rotated = Quaternion.AngleAxis(angle, perp) * t.forward;
 			return new Vector2(rotated.x, rotated.z).normalized;
 		}

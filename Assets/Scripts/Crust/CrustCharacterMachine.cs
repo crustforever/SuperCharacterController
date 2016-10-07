@@ -7,8 +7,6 @@ namespace AssemblyCSharp
 	[RequireComponent(typeof(CrustCharacterInput))]
 	public class CrustCharacterMachine : SuperStateMachine
 	{
-		//public Transform AnimatedMesh;
-
 		public float MoveSpeed = 4.0f;
 		public float MoveAcceleration = 30.0f;
 		public float FrictionDeceleration = 10.0f;
@@ -19,7 +17,6 @@ namespace AssemblyCSharp
 		public float JumpHeight = 3.0f;
 		public float Gravity = 25.0f;
 
-		// Add more states by comma separating them
 		public enum States { IDLE, WALK, JUMP, FALL }
 
 		public Transform CharacterCameraTransform;
@@ -53,12 +50,12 @@ namespace AssemblyCSharp
 			transform.position += this._velocity * this._controller.deltaTime;
 
 			//update facing
-//			Vector2 turnDirection = TopDownCameraRelativeDirection(this.TurnDeadZone);
-//			if (turnDirection != Vector2.zero)
-//			{
-//				this._last_turn_direction = turnDirection;
-//			}
-//			UpdateFacing(this._last_turn_direction);
+			Vector2 turnDirection = TopDownCameraRelativeDirection(this.TurnDeadZone);
+			if (turnDirection != Vector2.zero)
+			{
+				this._last_turn_direction = turnDirection;
+			}
+			UpdateFacing(this._last_turn_direction);
 		}
 
 		private bool AcquiringGround()
@@ -90,13 +87,13 @@ namespace AssemblyCSharp
 				return Vector2.zero;
 
 			//get the camera's top down right and forward directions
-			Vector2 camTopDownForward = this.CharacterCameraTransform.TopDownForward();
+			Vector2 camTopDownForward = this.CharacterCameraTransform.TopDownForward(this.transform.up);
 			Vector3 camTopDownRight3D = Quaternion.AngleAxis(90.0f, Vector3.up) * new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y);
 			Vector2 camTopDownRight = new Vector3(camTopDownRight3D.x, camTopDownRight3D.z);
 
 			//TODO move to camera!
-			Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y), Color.cyan);
-			Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(camTopDownRight.x, 0.0f, camTopDownRight.y), Color.yellow);
+			//Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y), Color.cyan);
+			//Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(camTopDownRight.x, 0.0f, camTopDownRight.y), Color.yellow);
 
 			//build a top down vector local to the camera by taking the right and forward contributions respective to the camera facing
 			Vector2 cameraLocal = Vector2.zero;
@@ -186,11 +183,11 @@ namespace AssemblyCSharp
 			Vector3 perp = Vector3.Cross(Vector3.up, this.transform.up);
 			Vector3 steppedWorldFacing = Quaternion.AngleAxis(angle, perp) * steppedFacing;
 
-			//set rotation on the transform by converting to a quaternion 
-			this.transform.rotation = Quaternion.LookRotation(steppedWorldFacing);
+			//set rotation on the transform by converting to a quaternion
+			this.transform.rotation = Quaternion.LookRotation(steppedWorldFacing, this.transform.up);
 
-			Debug.DrawRay(this.transform.position, new Vector3(targetFacing.x, 0.0f, targetFacing.y) * 10.0f, Color.green);
-			Debug.DrawRay(this.transform.position, steppedWorldFacing * 10.0f, Color.yellow);
+//			Debug.DrawRay(this.transform.position, new Vector3(targetFacing.x, 0.0f, targetFacing.y) * 10.0f, Color.green);
+//			Debug.DrawRay(this.transform.position, steppedWorldFacing * 10.0f, Color.yellow);
 		}
 			
 		#region Idle
