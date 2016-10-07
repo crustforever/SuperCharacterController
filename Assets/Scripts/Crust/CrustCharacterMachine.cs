@@ -35,8 +35,8 @@ namespace AssemblyCSharp
 			this._input = gameObject.GetComponent<CrustCharacterInput>();
 			this._controller = gameObject.GetComponent<SuperCharacterController>();
 
-			//use initial facing as the last turn direction
-			this._last_turn_direction = new Vector2(this.transform.forward.z, this.transform.forward.x);
+			//use initial direction as the last turn direction
+			this._last_turn_direction = TopDownForward(this.transform);
 
 			//set state to idle on start
 			currentState = States.IDLE;
@@ -58,12 +58,12 @@ namespace AssemblyCSharp
 			transform.position += this._velocity * this._controller.deltaTime;
 
 			//update facing
-			Vector2 turnDirection = TopDownDirection(this.TurnDeadZone);
-			if (turnDirection != Vector2.zero)
-			{
-				this._last_turn_direction = turnDirection;
-			}
-			UpdateFacing(this._last_turn_direction);
+//			Vector2 turnDirection = TopDownCameraRelativeDirection(this.TurnDeadZone);
+//			if (turnDirection != Vector2.zero)
+//			{
+//				this._last_turn_direction = turnDirection;
+//			}
+//			UpdateFacing(this._last_turn_direction);
 		}
 
 		private bool AcquiringGround()
@@ -82,17 +82,32 @@ namespace AssemblyCSharp
 //			_facing = Quaternion.FromToRotation(transform.up, up) * _facing;
 //		}
 
-		private Vector2 TopDownDirection(float deadZoneMagnitude)
+		/// <summary>
+		/// Rotates the 3D forward vector of the given transform into the XZ plane and returns the 2D top-down forward vector
+		/// </summary>
+		private Vector2 TopDownForward(Transform t)
 		{
-			//get the left axis
+			float angle = Vector3.Angle(t.up, Vector3.up);
+			Vector3 perp = Vector3.Cross(t.up, Vector3.up);
+			Vector3 rotated = Quaternion.AngleAxis(angle, perp) * t.forward;
+			return new Vector2(rotated.x, rotated.z).normalized;
+		}
+
+		/// <summary>
+		/// Takes the top down direction of the camera and adds the left stick direction to it
+		/// </summary>
+		private Vector2 TopDownCameraRelativeDirection(float deadZoneMagnitude)
+		{
+			//get the left stick axis
 			Vector2 leftAxis = this._input.Current.LeftAxis;
 
 			//apply the deadzone
 			if (Mathf.Abs(leftAxis.magnitude) < deadZoneMagnitude)
-				leftAxis = Vector2.zero;
+				return Vector2.zero;
 
 			//get the camera's right and forward directions
-			Vector2 topDownCamForward = new Vector2(this.CharacterCameraTransform.forward.x, this.CharacterCameraTransform.forward.z).normalized;
+			Vector2 topDownCamForward = TopDownForward(this.CharacterCameraTransform);
+			//Vector2 topDownCamForward = new Vector2(this.CharacterCameraTransform.forward.x, this.CharacterCameraTransform.forward.z).normalized;
 			Vector3 topDownCamRight3D = Quaternion.AngleAxis(90.0f, Vector3.up) * new Vector3(topDownCamForward.x, 0.0f, topDownCamForward.y);
 			Vector2 topDownCamRight = new Vector3(topDownCamRight3D.x, topDownCamRight3D.z);
 
@@ -121,13 +136,19 @@ namespace AssemblyCSharp
 			return Mathf.Sqrt(2 * jumpHeight * gravity);
 		}
 
-		void UpdateFacing(Vector2 facing)
+		/// <summary>
+		/// Takes a 2D vector representing the desired top down facing
+		/// </summary>
+		void UpdateFacing(Vector2 targetFacing)
 		{
+			//get our current facing as a top down 2D vector
+			Vector2 currentFacing = TopDownForward(this.transform);
+
 			//apply a tween to rotate the character towards the movement vector such that a FULL TURN will take this.TurnSeconds
 			//first find the angular difference between the current facing's angle and the movement direction's angle
 			//remember that these angles are calculated using only the X and Z (2D vectors from the topdown perspective)
-			float targetAngle = Mathf.Atan2(facing.y, facing.x);
-			float currentAngle = Mathf.Atan2(this.transform.forward.z, this.transform.forward.x);
+			float targetAngle = Mathf.Atan2(targetFacing.y, targetFacing.x);
+			float currentAngle = Mathf.Atan2(currentFacing.y, currentFacing.x);
 			float angleDifference = targetAngle - currentAngle;
 
 			//this angle difference is essentially a measurement of how far away from the desired movement vector we are
@@ -174,13 +195,18 @@ namespace AssemblyCSharp
 			//NOTE: it is important to realize that the vector that we're actually rotating to get the result is the vector opposite from the movement vector
 			//we rotate that one because our tween function goes from 0-1 and the opposite vector (180 degrees away) is the reference point for the beginning of the tween (0) and
 			//the movement vector itself is the reference point for the end of the tween (1)
-			Vector3 steppedFacing = Quaternion.AngleAxis(steppedAngleDifference, Vector3.up) * new Vector3(-facing.x, 0.0f, -facing.y);
+			Vector3 steppedFacing = Quaternion.AngleAxis(steppedAngleDifference, Vector3.up) * new Vector3(-targetFacing.x, 0.0f, -targetFacing.y);
+
+			//rotate the stepped facing back into world space relative to the character's up vector
+			float angle = Vector3.Angle(Vector3.up, this.transform.up);
+			Vector3 perp = Vector3.Cross(Vector3.up, this.transform.up);
+			Vector3 steppedWorldFacing = Quaternion.AngleAxis(angle, perp) * steppedFacing;
 
 			//set rotation on the transform by converting to a quaternion 
-			this.transform.rotation = Quaternion.LookRotation(steppedFacing);
+			this.transform.rotation = Quaternion.LookRotation(steppedWorldFacing);
 
-			Debug.DrawRay(this.transform.position, this.transform.forward, Color.red);
-			Debug.DrawRay(this.transform.position, new Vector3(facing.x, 0.0f, facing.y), Color.cyan);
+			Debug.DrawRay(this.transform.position, new Vector3(targetFacing.x, 0.0f, targetFacing.y) * 10.0f, Color.green);
+			Debug.DrawRay(this.transform.position, steppedWorldFacing * 10.0f, Color.yellow);
 		}
 			
 		#region Idle
@@ -205,7 +231,7 @@ namespace AssemblyCSharp
 				return;
 			}
 
-			if (TopDownDirection(this.MoveDeadZone) != Vector2.zero)
+			if (TopDownCameraRelativeDirection(this.MoveDeadZone) != Vector2.zero)
 			{
 				currentState = States.WALK;
 				return;
@@ -233,12 +259,18 @@ namespace AssemblyCSharp
 				return;
 			}
 
-			//get the direction the character wants to move
-			Vector2 movementDirection = TopDownDirection(this.MoveDeadZone);
-			if (movementDirection != Vector2.zero)
+			//get the 2D world direction the character wants to move
+			Vector2 movementDirection = TopDownCameraRelativeDirection(this.MoveDeadZone);
+
+			//transform to 3D with respect to the character's up vector
+			float angle = Vector3.Angle(Vector3.up, this.transform.up);
+			Vector3 perp = Vector3.Cross(Vector3.up, this.transform.up);
+			Vector3 movementDirection3D = Quaternion.AngleAxis(angle, perp) * new Vector3(movementDirection.x, 0.0f, movementDirection.y);
+
+			if (movementDirection3D != Vector3.zero)
 			{
 				//apply an acceleration in that direction
-				_velocity = Vector3.MoveTowards(_velocity, new Vector3(movementDirection.x, 0.0f, movementDirection.y) * MoveSpeed, MoveAcceleration * _controller.deltaTime);
+				_velocity = Vector3.MoveTowards(this._velocity, movementDirection3D * MoveSpeed, MoveAcceleration * _controller.deltaTime);
 			}
 			else
 			{
@@ -270,10 +302,18 @@ namespace AssemblyCSharp
 				return;
 			}
 
-			Vector2 moveDirection = TopDownDirection(this.MoveDeadZone);
-			Vector3 moveDirection3D = new Vector3(moveDirection.x, 0.0f, moveDirection.y);
-			planarMoveDirection = Vector3.MoveTowards(planarMoveDirection, moveDirection3D * MoveSpeed, AirborneAcceleration * _controller.deltaTime);
-			verticalMoveDirection -= _controller.up * Gravity * _controller.deltaTime;
+//			//get the 2D world direction the character wants to move
+//			Vector2 movementDirection = TopDownCameraRelativeDirection(this.MoveDeadZone);
+//
+//			//transform to 3D with respect to the character's up vector
+//			float angle = Vector3.Angle(Vector3.up, this.transform.up);
+//			Vector3 perp = Vector3.Cross(Vector3.up, this.transform.up);
+//			Vector3 movementDirection3D = Quaternion.AngleAxis(angle, perp) * new Vector3(movementDirection.x, 0.0f, movementDirection.y);
+//
+//			Vector2 moveDirection = TopDownCameraRelativeDirection(this.MoveDeadZone);
+//			Vector3 moveDirection3D = new Vector3(moveDirection.x, 0.0f, moveDirection.y);
+//			planarMoveDirection = Vector3.MoveTowards(planarMoveDirection, movementDirection3D * MoveSpeed, AirborneAcceleration * _controller.deltaTime);
+			verticalMoveDirection -= this._controller.up * Gravity * _controller.deltaTime;
 
 			_velocity = planarMoveDirection + verticalMoveDirection;
 		}
