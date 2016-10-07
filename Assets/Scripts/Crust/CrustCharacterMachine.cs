@@ -35,8 +35,8 @@ namespace AssemblyCSharp
 			this._input = gameObject.GetComponent<CrustCharacterInput>();
 			this._controller = gameObject.GetComponent<SuperCharacterController>();
 
-			//use initial direction as the last turn direction
-			this._last_turn_direction = TopDownForward(this.transform);
+			//use initial top down direction as the last turn direction
+			this._last_turn_direction = this.transform.TopDownForward();
 
 			//set state to idle on start
 			currentState = States.IDLE;
@@ -44,12 +44,7 @@ namespace AssemblyCSharp
 
 		protected override void EarlyGlobalSuperUpdate()
 		{
-			// Rotate out facing direction horizontally based on mouse input
-			//_facing = Quaternion.AngleAxis(_input.Current.CameraVector.x, _controller.up) * _facing;
-
-			//TopDownDirection(this.MoveDeadZone);
-
-			//DebugDraw
+			//
 		}
 
 		protected override void LateGlobalSuperUpdate()
@@ -83,17 +78,6 @@ namespace AssemblyCSharp
 //		}
 
 		/// <summary>
-		/// Rotates the 3D forward vector of the given transform into the XZ plane and returns the 2D top-down forward vector
-		/// </summary>
-		private Vector2 TopDownForward(Transform t)
-		{
-			float angle = Vector3.Angle(t.up, Vector3.up);
-			Vector3 perp = Vector3.Cross(t.up, Vector3.up);
-			Vector3 rotated = Quaternion.AngleAxis(angle, perp) * t.forward;
-			return new Vector2(rotated.x, rotated.z).normalized;
-		}
-
-		/// <summary>
 		/// Takes the top down direction of the camera and adds the left stick direction to it
 		/// </summary>
 		private Vector2 TopDownCameraRelativeDirection(float deadZoneMagnitude)
@@ -105,28 +89,28 @@ namespace AssemblyCSharp
 			if (Mathf.Abs(leftAxis.magnitude) < deadZoneMagnitude)
 				return Vector2.zero;
 
-			//get the camera's right and forward directions
-			Vector2 topDownCamForward = TopDownForward(this.CharacterCameraTransform);
-			//Vector2 topDownCamForward = new Vector2(this.CharacterCameraTransform.forward.x, this.CharacterCameraTransform.forward.z).normalized;
-			Vector3 topDownCamRight3D = Quaternion.AngleAxis(90.0f, Vector3.up) * new Vector3(topDownCamForward.x, 0.0f, topDownCamForward.y);
-			Vector2 topDownCamRight = new Vector3(topDownCamRight3D.x, topDownCamRight3D.z);
+			//get the camera's top down right and forward directions
+			Vector2 camTopDownForward = this.CharacterCameraTransform.TopDownForward();
+			Vector3 camTopDownRight3D = Quaternion.AngleAxis(90.0f, Vector3.up) * new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y);
+			Vector2 camTopDownRight = new Vector3(camTopDownRight3D.x, camTopDownRight3D.z);
 
-			Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(topDownCamForward.x, 0.0f, topDownCamForward.y), Color.cyan);
-			Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(topDownCamRight.x, 0.0f, topDownCamRight.y), Color.yellow);
+			//TODO move to camera!
+			Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y), Color.cyan);
+			Debug.DrawRay(this.CharacterCameraTransform.position, new Vector3(camTopDownRight.x, 0.0f, camTopDownRight.y), Color.yellow);
 
 			//build a top down vector local to the camera by taking the right and forward contributions respective to the camera facing
 			Vector2 cameraLocal = Vector2.zero;
 			if (!Mathf.Approximately(leftAxis.x, 0.0f))
 			{
-				cameraLocal += topDownCamRight * leftAxis.x;
+				cameraLocal += camTopDownRight * leftAxis.x;
 			}
 
 			if (!Mathf.Approximately(leftAxis.y, 0.0f))
 			{
-				cameraLocal += topDownCamForward * leftAxis.y;
+				cameraLocal += camTopDownForward * leftAxis.y;
 			}
 
-			//normalize it
+			//normalize it to make it a direction
 			return cameraLocal.normalized;
 		}
 
@@ -142,7 +126,7 @@ namespace AssemblyCSharp
 		void UpdateFacing(Vector2 targetFacing)
 		{
 			//get our current facing as a top down 2D vector
-			Vector2 currentFacing = TopDownForward(this.transform);
+			Vector2 currentFacing = this.transform.TopDownForward();
 
 			//apply a tween to rotate the character towards the movement vector such that a FULL TURN will take this.TurnSeconds
 			//first find the angular difference between the current facing's angle and the movement direction's angle
