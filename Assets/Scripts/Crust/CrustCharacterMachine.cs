@@ -68,12 +68,6 @@ namespace AssemblyCSharp
 			return this._controller.currentGround.IsGrounded(true, 0.5f);
 		}
 
-		//TODO
-//		public void RotateGravity(Vector3 up)
-//		{
-//			_facing = Quaternion.FromToRotation(transform.up, up) * _facing;
-//		}
-
 		/// <summary>
 		/// Takes the top down direction of the camera and adds the left stick direction to it
 		/// </summary>
@@ -273,30 +267,28 @@ namespace AssemblyCSharp
 
 		void JUMP_SuperUpdate()
 		{
-			Vector3 planarMoveDirection = Math3d.ProjectVectorOnPlane(_controller.up, _velocity);
-			Vector3 verticalMoveDirection = _velocity - planarMoveDirection;
+			Vector3 horizontalVelocity = Math3d.ProjectVectorOnPlane(this._controller.up, this._velocity);
+			Vector3 verticalVelocity = this._velocity - horizontalVelocity;
 
-			if (Vector3.Angle(verticalMoveDirection, _controller.up) > 90 && AcquiringGround())
+			if (Vector3.Angle(verticalVelocity, this._controller.up) > 90 && AcquiringGround())
 			{
-				_velocity = planarMoveDirection;
-				currentState = States.IDLE;
+				this._velocity = horizontalVelocity;
+				this.currentState = States.IDLE;
 				return;
 			}
 
-//			//get the 2D world direction the character wants to move
-//			Vector2 movementDirection = TopDownCameraRelativeDirection(this.MoveDeadZone);
-//
-//			//transform to 3D with respect to the character's up vector
-//			float angle = Vector3.Angle(Vector3.up, this.transform.up);
-//			Vector3 perp = Vector3.Cross(Vector3.up, this.transform.up);
-//			Vector3 movementDirection3D = Quaternion.AngleAxis(angle, perp) * new Vector3(movementDirection.x, 0.0f, movementDirection.y);
-//
-//			Vector2 moveDirection = TopDownCameraRelativeDirection(this.MoveDeadZone);
-//			Vector3 moveDirection3D = new Vector3(moveDirection.x, 0.0f, moveDirection.y);
-//			planarMoveDirection = Vector3.MoveTowards(planarMoveDirection, movementDirection3D * MoveSpeed, AirborneAcceleration * _controller.deltaTime);
-			verticalMoveDirection -= this._controller.up * Gravity * _controller.deltaTime;
+			//get the 2D world direction the character wants to move
+			Vector2 movementDirection = TopDownCameraRelativeDirection(this.MoveDeadZone);
 
-			_velocity = planarMoveDirection + verticalMoveDirection;
+			//transform to 3D with respect to the character's up vector
+			float angle = Vector3.Angle(Vector3.up, this.transform.up);
+			Vector3 perp = Vector3.Cross(Vector3.up, this.transform.up);
+			Vector3 movementDirection3D = Quaternion.AngleAxis(angle, perp) * new Vector3(movementDirection.x, 0.0f, movementDirection.y);
+
+			horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, movementDirection3D * MoveSpeed, AirborneAcceleration * this._controller.deltaTime);
+			verticalVelocity -= this._controller.up * Gravity * this._controller.deltaTime;
+
+			this._velocity = horizontalVelocity + verticalVelocity;
 		}
 
 		#endregion
