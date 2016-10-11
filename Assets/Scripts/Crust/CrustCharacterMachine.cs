@@ -82,7 +82,8 @@ namespace AssemblyCSharp
 
 			//get the camera's top down right and forward directions
 			Vector2 camTopDownForward = this.CharacterCameraTransform.TopDownForward(this.transform.up);
-			Vector3 camTopDownRight3D = Quaternion.AngleAxis(90.0f, Vector3.up) * new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y);
+			float rightAngle = (this.CharacterCameraTransform.up.y >= 0.0f) ? 90.0f : -90.0f;
+			Vector3 camTopDownRight3D = Quaternion.AngleAxis(rightAngle, Vector3.up) * new Vector3(camTopDownForward.x, 0.0f, camTopDownForward.y);
 			Vector2 camTopDownRight = new Vector3(camTopDownRight3D.x, camTopDownRight3D.z);
 
 			//TODO move to camera!
