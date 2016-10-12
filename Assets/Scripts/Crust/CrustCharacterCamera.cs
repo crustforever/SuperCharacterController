@@ -36,7 +36,9 @@ namespace AssemblyCSharp
 				Vector3 planarCameraForward = Math3d.ProjectVectorOnPlane(this._controller.up, this.transform.forward).normalized;
 
 				//check if the target angle is inside the back facing dead zone; if so, kill the rotation
-				float backFacingAngularDifference = Vector3.Angle(this._machine.MovementDirection, -planarCameraForward);
+				//HACK HACK HACK
+				Vector3 characterMovementDirection = this._machine.StickToWorldDirection(0.0f);
+				float backFacingAngularDifference = Vector3.Angle(characterMovementDirection, -planarCameraForward);
 				if (backFacingAngularDifference < this.RotationDeadZone)
 				{
 					this._rotation_speed = 0.0f;
@@ -44,14 +46,14 @@ namespace AssemblyCSharp
 				else
 				{
 					//get the angular difference between the camera direction and the character's movement direction
-					float angularDifference = Vector3.Angle(planarCameraForward, this._machine.MovementDirection);
+					float angularDifference = Vector3.Angle(planarCameraForward, characterMovementDirection);
 
 					//clockwise?
-					Vector3 perp = Vector3.Cross(planarCameraForward, this._machine.MovementDirection);
+					Vector3 perp = Vector3.Cross(planarCameraForward, characterMovementDirection);
 					if (perp.y < 0)
 						angularDifference *= -1;
 
-					if (this.transform.up.y < 0)
+					if (this._controller.up.y < 0)
 						angularDifference *= -1;
 
 					//wrap it if necessary (should never happen)
