@@ -32,80 +32,67 @@ namespace AssemblyCSharp
 
 			if ((CrustCharacterMachine.States)this._machine.currentState == CrustCharacterMachine.States.WALK)
 			{
-				//get the camera's top down forward direction
-				Vector2 cameraDirection = this.transform.TopDownForward(this._controller.up);
-				Vector2 cameraBackDirection = -1 * cameraDirection;
+				//get the camera's forward direction in the character's XZ plane
+				Vector3 planarCameraForward = Math3d.ProjectVectorOnPlane(this._controller.up, this.transform.forward).normalized;
 
-				//get the character's turn direction (it's already in world space relative to the camera)
-				Vector2 turnDirection = this._machine.LastTurnDirection;
-
-				//get the camera's current angle and the target angle
-				float currentAngle = Mathf.Atan2(cameraDirection.y, cameraDirection.x);
-				float targetAngle = Mathf.Atan2(turnDirection.y, turnDirection.x);
-
-				//DEBUG
-				//Debug.DrawRay(this._target.position, Quaternion.AngleAxis(this.RotationDeadZone, Vector3.up) * new Vector3(cameraBackDirection.x, 0.0f, cameraBackDirection.y), Color.red);
-				//Debug.DrawRay(this._target.position, Quaternion.AngleAxis(-this.RotationDeadZone, Vector3.up) * new Vector3(cameraBackDirection.x, 0.0f, cameraBackDirection.y), Color.red);
-
-				//check if the target angle is inside the back facing dead zone; if so, do nothing
-				float backAngleDifference = Mathf.Atan2(cameraBackDirection.y, cameraBackDirection.x) - targetAngle;
-				if (Mathf.Abs(backAngleDifference) < this.RotationDeadZone * Mathf.Deg2Rad)
+				//check if the target angle is inside the back facing dead zone; if so, kill the rotation
+				float backFacingAngularDifference = Vector3.Angle(this._machine.MovementDirection, -planarCameraForward);
+				if (backFacingAngularDifference < this.RotationDeadZone)
 				{
-					//do nothing
+					this._rotation_speed = 0.0f;
 				}
 				else
 				{
-					//get the angle difference between the target and the camera
-					float angleDifference = currentAngle - targetAngle;
+					//get the angular difference between the camera direction and the character's movement direction
+					float angularDifference = Vector3.Angle(planarCameraForward, this._machine.MovementDirection);
+
+					//clockwise?
+					Vector3 perp = Vector3.Cross(planarCameraForward, this._machine.MovementDirection);
+					if (perp.y < 0)
+						angularDifference *= -1;
+
+					if (this.transform.up.y < 0)
+						angularDifference *= -1;
 
 					//wrap it if necessary (should never happen)
-					if (angleDifference > Mathf.PI)
-						angleDifference = angleDifference - Mathf.PI * 2.0f;
+					if (angularDifference > Mathf.PI * Mathf.Rad2Deg)
+						angularDifference = angularDifference - Mathf.PI * 2.0f * Mathf.Rad2Deg;
 
-					if (angleDifference < -Mathf.PI)
-						angleDifference = Mathf.PI * 2.0f + angleDifference;
+					if (angularDifference < -Mathf.PI * Mathf.Rad2Deg)
+						angularDifference = Mathf.PI * 2.0f * Mathf.Rad2Deg + angularDifference;
 
-					//get clockwise or counterclockwise speed
-					float turnRate;
-					if (angleDifference < 0)
-						turnRate = Mathf.Max(angleDifference * Mathf.Rad2Deg, -this.RotationDegreesPerSecond * Easing.Quartic.easeOut(Mathf.Abs(angleDifference / Mathf.PI)) * this._controller.deltaTime);
+					//get the rotation speed called for by the tween
+					if (angularDifference < 0)
+						this._rotation_speed = Mathf.Max(angularDifference, -this.RotationDegreesPerSecond * Easing.Quartic.easeOut(Mathf.Abs(angularDifference / (Mathf.PI * Mathf.Rad2Deg))) * this._controller.deltaTime);
 					else
-						turnRate = Mathf.Min(angleDifference * Mathf.Rad2Deg, this.RotationDegreesPerSecond * Easing.Quartic.easeOut(Mathf.Abs(angleDifference / Mathf.PI)) * this._controller.deltaTime);
-
-					//rotate the camera direction around the controller's up vector towards the turn direction
-					Vector3 rotated = Quaternion.AngleAxis(turnRate, this._controller.up) * this.transform.forward;
-					this.transform.rotation = Quaternion.LookRotation(rotated, this._controller.up);
-
-					//HACK store rotation speed for deceleration when idle
-					this._rotation_speed = turnRate;
+						this._rotation_speed = Mathf.Min(angularDifference, this.RotationDegreesPerSecond * Easing.Quartic.easeOut(Mathf.Abs(angularDifference / (Mathf.PI * Mathf.Rad2Deg))) * this._controller.deltaTime);
 				}
 			}
 			else if (Mathf.Abs(this._rotation_speed) > 0.0f)
 			{
 				//decelerate
 				this._rotation_speed = Mathf.MoveTowards(this._rotation_speed, 0.0f, this.RotationDeceleration * this._controller.deltaTime);
-
-				//rotate the camera direction towards the turn direction by the remaining rotation speed
-				Vector3 rotated = Quaternion.AngleAxis(this._rotation_speed, this._controller.up) * this.transform.forward;
-				transform.rotation = Quaternion.LookRotation(rotated, this._controller.up);
 			}
 
-			//get the camera's top down forward direction
-			Vector2 cameraForward = this.transform.TopDownForward(this._controller.up);
+			//rotate the camera direction around the controller's up vector by the rotation speed
+			Vector3 rotated = Quaternion.AngleAxis(this._rotation_speed, this._controller.up) * this.transform.forward;
+			//this.transform.rotation.SetLookRotation(rotated, this._controller.up);
+			//this.transform.rotation *= Quaternion.FromToRotation(this.transform.forward, rotated);
+			this.transform.rotation = Quaternion.LookRotation(rotated, this._controller.up);
 
-			//negate it and scale it by BackFollow
-			cameraForward *= -this.BackFollow;
+			//get the camera's new forward direction in the character's XZ plane
+			Vector3 newPlanarCameraForward = Math3d.ProjectVectorOnPlane(this._controller.up, this.transform.forward).normalized;
 
-			//make it a 3D vector and rotate it back to world space relative to the character's up vector
-			float angle = Vector3.Angle(Vector3.up, this._controller.up);
-			Vector3 perp = Vector3.Cross(Vector3.up, this._controller.up);
-			Vector3 world = Quaternion.AngleAxis(angle, perp) * new Vector3(cameraForward.x, 0.0f, cameraForward.y);
+			//add the follow contribution back after applying rotation
+			Vector3 follow = Vector3.zero;
+			follow -= newPlanarCameraForward * this.BackFollow;
+			follow += this._controller.up * this.UpFollow;
+			this.transform.position += follow;
 
-			//back follow contribution
-			this.transform.position += world;
-
-			//up follow contribution
-			this.transform.position += this._controller.up * this.UpFollow;
+			//DEBUG stizz
+			DebugExtension.DebugArrow(this._controller.transform.position, newPlanarCameraForward * 2, Color.green);
+			Debug.DrawRay(this.transform.position + this.transform.right, this.transform.forward * 10, Color.green);
+			Debug.DrawRay(this.transform.position - this.transform.right, this.transform.forward * 10, Color.green);
 		}
 	}
 }
