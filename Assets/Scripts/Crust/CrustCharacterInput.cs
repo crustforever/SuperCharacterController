@@ -8,9 +8,15 @@ namespace AssemblyCSharp
 		public CrustInput Current;
 //		public Vector2 RightStickMultiplier = new Vector2(3, -1.5f);
 
+		public Vector2 LeftStickDebug;
+
 		void Update()
 		{
 			Vector2 leftAxis = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+
+			if (LeftStickDebug != Vector2.zero)
+				leftAxis = LeftStickDebug;
+			
 //			Vector2 rightAxis = new Vector2(Input.GetAxis("RightH"), Input.GetAxis("RightV"));
 
 //			Vector2 cameraVector = new Vector2(rightAxis.x * RightStickMultiplier.x, rightAxis.y * RightStickMultiplier.y);
