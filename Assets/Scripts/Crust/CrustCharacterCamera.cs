@@ -28,6 +28,7 @@ namespace AssemblyCSharp
 
 		void LateUpdate()
 		{
+			//start by moving the camera to the character's position
 			this.transform.position = this._controller.transform.position;
 
 			if ((CrustCharacterMachine.States)this._machine.currentState == CrustCharacterMachine.States.WALK)
@@ -36,8 +37,7 @@ namespace AssemblyCSharp
 				Vector3 planarCameraForward = Math3d.ProjectVectorOnPlane(this._controller.up, this.transform.forward).normalized;
 
 				//check if the target angle is inside the back facing dead zone; if so, kill the rotation
-				//HACK HACK HACK
-				Vector3 characterMovementDirection = this._machine.StickToWorldDirection(0.0f);
+				Vector3 characterMovementDirection = this._machine.StickToWorld(this._machine.LastStickDirection, 0.0f);
 				float backFacingAngularDifference = Vector3.Angle(characterMovementDirection, -planarCameraForward);
 				if (backFacingAngularDifference < this.RotationDeadZone)
 				{
@@ -78,11 +78,9 @@ namespace AssemblyCSharp
 
 			//rotate the camera direction around the controller's up vector by the rotation speed
 			Vector3 rotated = Quaternion.AngleAxis(this._rotation_speed, this._controller.up) * this.transform.forward;
-			//this.transform.rotation.SetLookRotation(rotated, this._controller.up);
-			//this.transform.rotation *= Quaternion.FromToRotation(this.transform.forward, rotated);
 			this.transform.rotation = Quaternion.LookRotation(rotated, this._controller.up);
 
-			//get the camera's new forward direction in the character's XZ plane
+			//recalculate the camera's forward direction in the character's XZ plane after rotation
 			Vector3 newPlanarCameraForward = Math3d.ProjectVectorOnPlane(this._controller.up, this.transform.forward).normalized;
 
 			//add the follow contribution back after applying rotation
@@ -92,9 +90,7 @@ namespace AssemblyCSharp
 			this.transform.position += follow;
 
 			//DEBUG stizz
-			DebugExtension.DebugArrow(this._controller.transform.position, newPlanarCameraForward * 2, Color.green);
-			Debug.DrawRay(this.transform.position + this.transform.right, this.transform.forward * 10, Color.green);
-			Debug.DrawRay(this.transform.position - this.transform.right, this.transform.forward * 10, Color.green);
+			DebugExtension.DebugArrow(this.transform.position - this._controller.up * this.UpFollow, this._controller.transform.position - (this.transform.position - this._controller.up * this.UpFollow) - this._machine.DebugMagnitude * newPlanarCameraForward, Color.green);
 		}
 	}
 }

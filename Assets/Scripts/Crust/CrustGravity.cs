@@ -12,10 +12,13 @@ namespace AssemblyCSharp
 
 		void Update()
 		{
+			//get the difference
 			Vector3 dir = (this.transform.position - this.Target.position).normalized;
+
+			//rotate this
 			this.transform.rotation = Quaternion.FromToRotation(transform.up, dir) * transform.rotation;
 
-			//HACK HACK HACK
+			//HACK HACK HACK rotate our camera too ;)
 			Camera.main.transform.rotation = Quaternion.FromToRotation(Camera.main.transform.up, dir) * Camera.main.transform.rotation;
 		}
 	}
